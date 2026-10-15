@@ -28,48 +28,47 @@ if (isset($_POST['bayar_dobi'])) {
     $total_amount = 0;
 
     // One transaction per service, so the stamp trigger awards one stamp per service
-    $success = true;
     $inserted_ids = []; // Passed to the invoice page
 
-    $stmt_insert = $conn->prepare("INSERT INTO transaction (customer_id, staff_id, total_amount, payment_method, status, notes)
-                                   VALUES (?, 1, ?, ?, 'pending', ?)");
-    $stmt_update = $conn->prepare("UPDATE transaction SET status = 'completed' WHERE transaction_id = ?");
+    // All services are saved in one DB transaction: if any step fails, nothing is saved,
+    // including the stamps the trigger added, so the customer is never half-charged.
+    $conn->begin_transaction();
+    try {
+        $stmt_insert = $conn->prepare("INSERT INTO transaction (customer_id, staff_id, total_amount, payment_method, status, notes)
+                                       VALUES (?, 1, ?, ?, 'pending', ?)");
+        $stmt_update = $conn->prepare("UPDATE transaction SET status = 'completed' WHERE transaction_id = ?");
 
-    foreach ($services_selected as $current_service) {
-        $price = $service_prices[$current_service];
-        $note = "Service: " . ucfirst($current_service);
+        foreach ($services_selected as $current_service) {
+            $price = $service_prices[$current_service];
+            $note = "Service: " . ucfirst($current_service);
 
-        // Insert as 'pending' first...
-        $stmt_insert->bind_param("idss", $cust_id, $price, $payment_method, $note);
-
-        if ($stmt_insert->execute()) {
+            // Insert as 'pending' first...
+            $stmt_insert->bind_param("idss", $cust_id, $price, $payment_method, $note);
+            $stmt_insert->execute();
             $new_txn_id = $conn->insert_id;
-            $inserted_ids[] = $new_txn_id;
-            $total_amount += $price;
 
             // ...then mark it 'completed': the stamp trigger only fires on UPDATE
             $stmt_update->bind_param("i", $new_txn_id);
             $stmt_update->execute();
-        } else {
-            $success = false;
-        }
-    }
 
-    if (!$success) {
+            $inserted_ids[] = $new_txn_id;
+            $total_amount += $price;
+        }
+        $conn->commit();
+    } catch (mysqli_sql_exception $e) {
+        $conn->rollback();
         echo "<script>alert('Ralat: Bayaran gagal diproses. Sila cuba lagi.'); window.location='customer_dashboard.php';</script>";
         exit();
     }
 
-    if ($success) {
-        // invoice.php reads these IDs to show this payment
-        $_SESSION['last_transaction_ids'] = $inserted_ids;
-        
-        echo "<script>
-            alert('Bayaran Berjaya! RM " . number_format($total_amount, 2) . " telah diproses. Sila semak invois anda.');
-            window.location.href = 'invoice.php';
-        </script>";
-        exit();
-    }
+    // invoice.php reads these IDs to show this payment
+    $_SESSION['last_transaction_ids'] = $inserted_ids;
+
+    echo "<script>
+        alert('Bayaran Berjaya! RM " . number_format($total_amount, 2) . " telah diproses. Sila semak invois anda.');
+        window.location.href = 'invoice.php';
+    </script>";
+    exit();
 }
 
 // 2. Redeem a free wash
