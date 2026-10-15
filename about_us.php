@@ -18,8 +18,7 @@
             position: relative;
         }
 
-        /* Gambar kedai dobi korang sebagai background penuh */
-       /* Gambar kedai dobi baharu sebagai background penuh */
+        /* Full-page background image, fixed behind the content */
         body::before {
             content: "";
             position: fixed;
@@ -27,7 +26,6 @@
             left: 0;
             width: 100%;
             height: 100%;
-            /* TUKAR KEPADA BG_ABOUT DI SINI */
             background-image: linear-gradient(rgba(15, 23, 42, 0.65), rgba(15, 23, 42, 0.65)), url('unnamed (1).webp');
             background-size: cover;
             background-position: center;
@@ -35,7 +33,7 @@
             z-index: -1;
         }
 
-        /* Kotak kandungan putih pekat berkilau premium */
+        /* Main content card */
         .content-container {
             background: rgba(255, 255, 255, 0.96); 
             max-width: 850px;
@@ -46,7 +44,7 @@
             box-sizing: border-box;
         }
 
-        /* Tajuk utama warna oren ikut tema rujukan */
+        /* Page title in the brand orange */
         .main-heading {
             color: #ce0000;
             font-size: 2.6rem;
@@ -55,7 +53,7 @@
             margin-bottom: 25px;
         }
 
-        /* Tajuk kecil untuk Visi & Misi */
+        /* Section headings for Vision and Mission */
         .sub-heading {
             color: #ce0000;
             font-size: 1.6rem;
@@ -73,7 +71,7 @@
             text-align: justify;
         }
 
-        /* Butang Kembali */
+        /* Back button */
         .btn-back {
             display: inline-block;
             background-color: #a91e1e;
@@ -97,7 +95,7 @@
 <body>
 
 <div class="content-container">
-    <!-- Tajuk Utama -->
+    <!-- Title -->
     <h1 class="main-heading">We Are Everyone's Laundry!</h1>
     
     <p>When you mentioned <strong>Siti Dobi®</strong>, you are going to your own place.</p>
@@ -110,15 +108,15 @@
     
     <p>The <strong>Siti Dobi®</strong> business model has also proven to be resilient, continuing to expand even during the pandemic.</p>
 
-    <!-- Seksyen Vision -->
+    <!-- Vision -->
     <h2 class="sub-heading">Vision</h2>
     <p>Simplicity, Focused, to build a century-old brand.</p>
 
-    <!-- Seksyen Mission -->
+    <!-- Mission -->
     <h2 class="sub-heading">Mission</h2>
     <p>Empowering a global brand, Driving prosperity to our Partners.</p>
 
-    <!-- Butang patah balik ke welcome page utama -->
+    <!-- Back to the welcome page -->
     <a href="welcome.php" class="btn-back">⬅️ Kembali ke Menu Utama</a>
 </div>
 

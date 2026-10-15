@@ -10,14 +10,14 @@ if (isset($_POST['login'])) {
     $phone = preg_replace('/[^0-9]/', '', $_POST['phone']);
     $password = $_POST['password'];
 
-    // Cari pelanggan ikut no. telefon (unik), kemudian semak hash password
+    // Look up by phone number (unique), then verify the password hash
     $stmt = $conn->prepare("SELECT * FROM customer WHERE phone = ?");
     $stmt->bind_param("s", $phone);
     $stmt->execute();
     $customer = $stmt->get_result()->fetch_assoc();
 
     if ($customer && password_verify($password, $customer['password_hash'])) {
-        unset($customer['password_hash']); // Jangan simpan hash dalam session
+        unset($customer['password_hash']); // Never keep the hash in the session
         session_regenerate_id(true);
         $_SESSION['customer'] = $customer;
         echo "<script>window.location='customer_dashboard.php';</script>";
@@ -92,16 +92,16 @@ if (isset($_POST['login'])) {
         .link { display: block; text-align: center; margin-top: 15px; color: #0284c7; text-decoration: none; font-size: 0.9rem; }
         .link:hover { text-decoration: underline; }
 
-        /* Style khas untuk link About Us baru biar nampak kontra & korporat */
+        /* About Us link, separated from the login links */
         .link-about {
             display: block;
             text-align: center;
             margin-top: 15px;
-            color: #f97316; /* Guna warna oren macam rujukan myDobi */
+            color: #f97316; /* Brand orange */
             text-decoration: none;
             font-size: 0.9rem;
             font-weight: 500;
-            border-top: 1px solid #f1f5f9; /* Garisan pemisah halus atas link */
+            border-top: 1px solid #f1f5f9; /* Thin divider above the link */
             padding-top: 15px;
         }
         .link-about:hover {
@@ -130,8 +130,6 @@ if (isset($_POST['login'])) {
             
             <a href="customer_register.php" class="link">Belum ada akaun? Daftar sekarang</a>
             
-            <!-- BUTTON / LINK FUNCTION UNTUK LOMPAT KE LANDING PAGE LAIN -->
-           <!-- TUKAR WELCOME.PHP KEPADA ABOUT_US.PHP SEPERTI DI BAWAH -->
             <a href="about_us.php" class="link-about">ℹ️ Learn More: About Us</a>
         </form>
     </div>

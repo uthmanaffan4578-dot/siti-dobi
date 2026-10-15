@@ -1,10 +1,10 @@
 <?php
 session_start();
-// Padamkan semua data session yang sedang aktif
+// Clear and destroy the current session
 session_unset();
 session_destroy();
 
-// Hantar pengguna kembali ke halaman pilihan portal utama
+// Back to the portal selection page
 header("Location: welcome.php");
 exit();
 ?>

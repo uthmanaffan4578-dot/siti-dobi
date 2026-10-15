@@ -10,18 +10,18 @@ if (isset($_POST['login_staff'])) {
     $username = $_POST['username'];
     $password = $_POST['password'];
 
-    // Semak username dalam database staff (prepared statement elak SQL injection)
+    // Look up the username (prepared statement prevents SQL injection)
     $stmt = $conn->prepare("SELECT * FROM staff WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $staff = $stmt->get_result()->fetch_assoc();
 
-    // Mesej sama untuk username/password salah supaya penyerang tak boleh teka username
+    // Same message for a wrong username or password, so usernames can't be guessed
     if ($staff && password_verify($password, $staff['password_hash'])) {
         if ($staff['is_active'] != 1) {
             echo "<script>alert('Akaun staf ini telah digantung. Sila hubungi admin.');</script>";
         } else {
-            unset($staff['password_hash']); // Jangan simpan hash dalam session
+            unset($staff['password_hash']); // Never keep the hash in the session
             session_regenerate_id(true);
             $_SESSION['staff'] = $staff;
             echo "<script>window.location='index.php';</script>";
@@ -109,7 +109,7 @@ if (isset($_POST['login_staff'])) {
         }
         .btn-login:hover { background: #0284c7; }
         
-        /* Gaya pautan link yang sepadan dengan design premium */
+        /* Links below the form */
         .link-group {
             text-align: center;
             margin-top: 20px;
@@ -153,7 +153,7 @@ if (isset($_POST['login_staff'])) {
         <button type="submit" name="login_staff" class="btn-login">Masuk Dashboard</button>
         
         <div class="link-group">
-            <!-- Akaun staf baru hanya boleh dicipta oleh admin melalui Pengurusan Staf -->
+            <!-- No public sign-up: admins create staff accounts from Staff Management -->
             <a href="welcome.php" class="back-link">← Kembali ke Menu Utama</a>
         </div>
     </form>

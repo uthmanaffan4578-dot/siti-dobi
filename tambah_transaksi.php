@@ -1,6 +1,6 @@
 <?php
 session_start();
-// SEKATAN KESELAMATAN: Hanya staf yang log masuk boleh tambah transaksi
+// Staff-only page: redirect to login if there is no staff session
 if (!isset($_SESSION['staff'])) {
     header("Location: staff_login.php");
     exit();
@@ -24,7 +24,7 @@ if (isset($_POST['simpan_transaksi'])) {
     $payment_method = in_array($_POST['payment_method'], ['cash', 'ewallet', 'online_transfer', 'debit_card']) ? $_POST['payment_method'] : 'cash';
     $status         = ($_POST['status'] === 'completed') ? 'completed' : 'pending';
 
-    // Sentiasa INSERT sebagai 'pending' dulu. Trigger stamp hanya jalan bila status di-UPDATE ke 'completed'.
+    // Always insert as 'pending' first: the stamp trigger only fires when the status is UPDATEd to 'completed'.
     $stmt = $conn->prepare("INSERT INTO transaction (customer_id, staff_id, total_amount, payment_method, status)
                             VALUES (?, ?, ?, ?, 'pending')");
     $stmt->bind_param("iids", $customer_id, $staff_id, $total_amount, $payment_method);

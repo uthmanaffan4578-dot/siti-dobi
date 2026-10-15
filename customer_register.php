@@ -7,7 +7,7 @@ if ($conn->connect_error) {
 
 if (isset($_POST['register'])) {
     $name = trim($_POST['name']);
-    $phone = preg_replace('/[^0-9]/', '', $_POST['phone']); // Buang sengkang/ruang supaya format telefon konsisten
+    $phone = preg_replace('/[^0-9]/', '', $_POST['phone']); // Strip dashes and spaces so phone numbers are stored in one format
     $email = !empty($_POST['email']) ? trim($_POST['email']) : NULL;
     $password = $_POST['password'];
 
@@ -16,21 +16,21 @@ if (isset($_POST['register'])) {
     } elseif (strlen($password) < 6) {
         echo "<script>alert('Ralat: Kata laluan mesti sekurang-kurangnya 6 aksara!');</script>";
     } else {
-        // KESELAMATAN: Simpan hash sahaja, bukan kata laluan sebenar
+        // Store only the hash, never the plain-text password
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
-        // 1. Masukkan data ke dalam jadual customer (prepared statement elak SQL injection)
-        // Nota: Trigger 'trg_create_loyalty_card' dalam SQL korang akan auto-create kad jajaran kesetiaan secara automatik!
+        // Prepared statement prevents SQL injection.
+        // The trg_create_loyalty_card trigger creates the customer's loyalty card automatically.
         $stmt = $conn->prepare("INSERT INTO customer (name, phone, email, password_hash) VALUES (?, ?, ?, ?)");
         $stmt->bind_param("ssss", $name, $phone, $email, $password_hash);
 
-        // Nota: Sejak PHP 8.1, mysqli baling exception bila query gagal, jadi kena guna try/catch
+        // Since PHP 8.1, mysqli throws exceptions on query errors
         try {
             $stmt->execute();
             echo "<script>alert('Akaun pelanggan berjaya dicipta! Sila gunakan no. telefon & password tersebut untuk login.'); window.location='customer_login.php';</script>";
             exit();
         } catch (mysqli_sql_exception $e) {
-            // Jika no telefon dah wujud (sebab ada UNIQUE KEY pada phone dalam database korang)
+            // 1062 = duplicate key: phone has a UNIQUE index
             if ($e->getCode() == 1062) {
                 echo "<script>alert('Ralat: No telefon ini sudah berdaftar dengan sistem!');</script>";
             } else {

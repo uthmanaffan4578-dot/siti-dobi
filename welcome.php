@@ -8,7 +8,7 @@
     <style>
         body { 
             font-family: 'Poppins', sans-serif; 
-            /* Guna overlay gelap kebiruan + Gambar latar belakang dobi korang */
+            /* Dark blue overlay on top of the background photo */
             background-image: linear-gradient(rgba(9, 13, 22, 0.8), rgba(9, 13, 22, 0.8)), url('bgdobi.jpg'); 
             background-size: cover;
             background-position: center;
@@ -64,7 +64,7 @@
         .portal-btn:hover {
             transform: translateY(-2px);
         }
-        /* Butang Pelanggan - Warna Biru Cyber */
+        /* Customer button */
         .btn-customer {
             background: linear-gradient(135deg, #0284c7, #0369a1);
             color: white;
@@ -73,7 +73,7 @@
         .btn-customer:hover {
             box-shadow: 0 6px 25px rgba(2, 132, 199, 0.4);
         }
-        /* Butang Staf - Warna Gelap Border Kilat ala Reference */
+        /* Staff button */
         .btn-staff {
             background: #1e293b;
             color: #38bdf8;
@@ -98,12 +98,12 @@
     <p class="tagline">Sistem Aplikasi Layan Diri Pintar</p>
     
     <div class="portal-options">
-        <!-- Pilihan A: Pelanggan -->
+        <!-- Customer portal -->
         <a href="customer_login.php" class="portal-btn btn-customer">
             👥 Masuk Portal Pelanggan
         </a>
         
-        <!-- Pilihan B: Staf Kaunter/Admin -->
+        <!-- Staff / admin portal -->
         <a href="staff_login.php" class="portal-btn btn-staff">
             🛠️ Pengurusan Staf & Admin
         </a>

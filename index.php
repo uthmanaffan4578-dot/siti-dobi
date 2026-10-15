@@ -1,29 +1,29 @@
 <?php
 session_start();
-// SEKATAN KESELAMATAN: Jika tiada rekod session staf, automatik tendang balik ke staff_login.php!
+// Staff-only page: redirect to login if there is no staff session
 if (!isset($_SESSION['staff'])) {
     header("Location: staff_login.php");
     exit();
 }
 
-// 1. MEMBINA SAMBUNGAN DATABASE
+// 1. Database connection
 $conn = new mysqli("localhost", "root", "", "siti_dobi_db");
 if ($conn->connect_error) {
     die("Sambungan gagal: " . $conn->connect_error);
 }
 
-// Ambil maklumat peranan user sedia ada
+// Role of the logged-in staff member ('admin' or 'staff')
 $current_user_role = $_SESSION['staff']['role'];
 
 // ==========================================
-// LOGIK GANTUNG / AKTIFKAN STAF (Hanya untuk Admin/Super Admin)
-// Guna soft delete (is_active = 0) sebab staf yang ada transaksi tak boleh di-DELETE (foreign key).
-// Rekod transaksi lama kekal utuh, dan staf yang digantung tak boleh log masuk.
+// Suspend / reactivate staff (admin only)
+// Soft delete (is_active = 0): staff with transactions can't be DELETEd because of the foreign key,
+// and this keeps their sales history intact. Suspended staff can't log in.
 // ==========================================
 if (isset($_GET['toggle_staff_id']) && $current_user_role === 'admin') {
     $toggle_id = intval($_GET['toggle_staff_id']);
 
-    // Elakkan daripada tergantung akaun sendiri secara tidak sengaja
+    // Prevent admins from locking themselves out
     if ($toggle_id == $_SESSION['staff']['staff_id']) {
         echo "<script>alert('Ralat: Anda tidak boleh menggantung akaun anda sendiri yang sedang aktif!'); window.location='index.php?page=staff';</script>";
     } else {
@@ -39,8 +39,8 @@ if (isset($_GET['toggle_staff_id']) && $current_user_role === 'admin') {
     exit();
 }
 
-// 2. QUERY LIVE UNTUK KAD STATISTIK
-// Pendapatan BULAN INI sahaja. Tarikh diambil dari MySQL (bukan PHP) supaya zon masa sama dengan transaction_date.
+// 2. Stats cards
+// Current month's revenue only. The date comes from MySQL, not PHP, so it uses the same time zone as transaction_date.
 $query_sales = $conn->query("SELECT SUM(total_amount) AS total_sales, MONTH(CURDATE()) AS bulan, YEAR(CURDATE()) AS tahun
                              FROM transaction
                              WHERE status = 'completed'
@@ -60,7 +60,7 @@ $query_cust = $conn->query("SELECT COUNT(*) AS total_customers FROM customer");
 $row_cust = $query_cust->fetch_assoc();
 $live_customers = $row_cust['total_customers'] ?? 0;
 
-// Tentukan halaman mana nak papar (dashboard transaksi atau urus staf)
+// Which view to show: 'dashboard' (transactions) or 'staff' (staff management)
 $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
 ?>
 
@@ -99,7 +99,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
         }
         .btn-print:hover { background-color: #c2410c; }
         
-        /* Gaya navigasi sidebar */
+        /* Sidebar navigation */
         .nav-menu a {
             display: block; padding: 12px 20px; color: #cbd5e1; text-decoration: none; font-weight: 500; border-radius: 8px; margin-bottom: 5px;
         }
@@ -107,7 +107,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
             background: #0284c7; color: white;
         }
         
-        /* Butang aksi delete */
+        /* Suspend button */
         .btn-delete {
             background-color: #ef4444; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: 500;
         }
@@ -142,7 +142,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
             <nav class="nav-menu" style="margin-top: 20px;">
                 <a href="index.php?page=dashboard" class="<?php echo $page === 'dashboard' ? 'active' : ''; ?>">📊 Dashboard</a>
                 
-                <!-- KOD BARU: Menu Urus Staf Hanya Muncul Jika User Ialah 'admin' -->
+                <!-- Staff management is only shown to admins -->
                 <?php if ($current_user_role === 'admin'): ?>
                     <a href="index.php?page=staff" class="<?php echo $page === 'staff' ? 'active' : ''; ?>">👥 Pengurusan Staf</a>
                 <?php endif; ?>
@@ -176,7 +176,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
             </section>
 
             <!-- ======================================================================= -->
-            <!-- HALAMAN UTAMA A: JADUAL TRANSAKSI (DEFAULT) -->
+            <!-- VIEW A: TRANSACTION TABLE (DEFAULT) -->
             <!-- ======================================================================= -->
             <?php if ($page === 'dashboard'): ?>
             <section class="table-section">
@@ -230,13 +230,12 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
             <?php endif; ?>
 
             <!-- ======================================================================= -->
-            <!-- HALAMAN UTAMA B: PENGURUSAN STAF (HANYA UNTUK SUPER ADMIN / ROLE ADMIN) -->
+            <!-- VIEW B: STAFF MANAGEMENT (ADMIN ONLY) -->
             <!-- ======================================================================= -->
             <?php if ($page === 'staff' && $current_user_role === 'admin'): ?>
             <section class="table-section">
                 <div class="table-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h2>Sistem Pengurusan Staf (Super Admin Hub)</h2>
-                    <!-- Pautan ke fail register yang kita bina tadi untuk tambah staf baru! -->
                     <a href="staff_register.php" class="btn-add">➕ Tambah Staf Baru</a>
                 </div>
                 
@@ -267,7 +266,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
                                     echo "<td>" . ($s_row['is_active'] == 1 ? '✅ Aktif' : '❌ Digantung') . "</td>";
                                     echo "<td style='text-align: center;'>";
                                     if ($s_row['staff_id'] == $_SESSION['staff']['staff_id']) {
-                                        echo "<span style='color:#94a3b8; font-size:0.85rem;'>(Anda)</span>"; // Tak boleh gantung akaun sendiri
+                                        echo "<span style='color:#94a3b8; font-size:0.85rem;'>(Anda)</span>"; // Admins can't suspend their own account
                                     } elseif ($s_row['is_active'] == 1) {
                                         echo "<a href='index.php?page=staff&toggle_staff_id=" . $s_row['staff_id'] . "' class='btn-delete' onclick=\"return confirm('Adakah anda pasti mahu menggantung staf " . htmlspecialchars($s_row['name'], ENT_QUOTES) . "?');\">🚫 Gantung</a>";
                                     } else {

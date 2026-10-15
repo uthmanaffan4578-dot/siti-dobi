@@ -8,12 +8,12 @@ if (!isset($_SESSION['customer'])) {
 $conn = new mysqli("localhost", "root", "", "siti_dobi_db");
 $cust_id = intval($_SESSION['customer']['customer_id']);
 
-// Senarai harga servis yang sah (jangan percaya nilai dari form)
+// Prices are defined server-side; never trust amounts sent by the form
 $service_prices = ['basuh' => 5.00, 'kering' => 4.00];
 
-// 1. SIMULASI PEMBAYARAN IKUT SERVIS (KINI MENYOKONG DINAMIK PAYMENT METHOD)
+// 1. Simulated payment: one transaction per selected service
 if (isset($_POST['bayar_dobi'])) {
-    // Semak apa yang dicentang oleh user, buang nilai yang tak sah
+    // Keep only known service names from the submitted checkboxes
     $services_selected = isset($_POST['services']) && is_array($_POST['services']) ? $_POST['services'] : [];
     $services_selected = array_values(array_intersect(array_unique($services_selected), array_keys($service_prices)));
 
@@ -22,14 +22,14 @@ if (isset($_POST['bayar_dobi'])) {
         exit();
     }
 
-    // AMBIL NILAI DINAMIK DARI RADIO BUTTON DI BAWAH ('ewallet' atau 'debit_card')
+    // Only 'ewallet' and 'debit_card' are offered; anything else falls back to e-wallet
     $payment_method = (isset($_POST['payment_method']) && $_POST['payment_method'] === 'debit_card') ? 'debit_card' : 'ewallet';
 
     $total_amount = 0;
 
-    // Jalankan transaksi mengikut bilangan servis terpilih supaya trigger SQL berjalan tepat!
+    // One transaction per service, so the stamp trigger awards one stamp per service
     $success = true;
-    $inserted_ids = []; // KOD BARU: Sediakan array untuk simpan semua ID transaksi terlibat
+    $inserted_ids = []; // Passed to the invoice page
 
     $stmt_insert = $conn->prepare("INSERT INTO transaction (customer_id, staff_id, total_amount, payment_method, status, notes)
                                    VALUES (?, 1, ?, ?, 'pending', ?)");
@@ -39,15 +39,15 @@ if (isset($_POST['bayar_dobi'])) {
         $price = $service_prices[$current_service];
         $note = "Service: " . ucfirst($current_service);
 
-        // Langkah A: INSERT status 'pending'
+        // Insert as 'pending' first...
         $stmt_insert->bind_param("idss", $cust_id, $price, $payment_method, $note);
 
         if ($stmt_insert->execute()) {
             $new_txn_id = $conn->insert_id;
-            $inserted_ids[] = $new_txn_id; // KOD BARU: Simpan ID transaksi pusingan ini
+            $inserted_ids[] = $new_txn_id;
             $total_amount += $price;
 
-            // Langkah B: UPDATE status ke 'completed' untuk memaksa trigger SQL berjalan
+            // ...then mark it 'completed': the stamp trigger only fires on UPDATE
             $stmt_update->bind_param("i", $new_txn_id);
             $stmt_update->execute();
         } else {
@@ -61,7 +61,7 @@ if (isset($_POST['bayar_dobi'])) {
     }
 
     if ($success) {
-        // KOD BARU: Simpan kesemua ID transaksi tadi ke dalam SESSION
+        // invoice.php reads these IDs to show this payment
         $_SESSION['last_transaction_ids'] = $inserted_ids;
         
         echo "<script>
@@ -72,10 +72,10 @@ if (isset($_POST['bayar_dobi'])) {
     }
 }
 
-// 2. FUNGSI REDEEM
-// Trigger SQL dah cipta rekod reward_redemption 'pending' bila stamp cukup 10.
-// Tebus = tukar rekod 'pending' paling lama kepada 'redeemed' + tolak baki.
-// Kedua-dua langkah dalam satu DB transaction: kalau satu gagal, semua dibatalkan (baki tak hilang).
+// 2. Redeem a free wash
+// The stamp trigger creates a 'pending' reward_redemption row on every 10th stamp.
+// Redeeming marks the oldest pending row as 'redeemed' and decrements the balance.
+// Both steps run in one DB transaction, so a failure can't lose the customer's reward.
 if (isset($_POST['redeem_reward'])) {
     $redeemed = false;
     $conn->begin_transaction();
@@ -112,7 +112,7 @@ if (isset($_POST['redeem_reward'])) {
     }
 }
 
-// 3. AMBIL DATA LIVE DARI DATABASE
+// 3. Load current customer and loyalty card data
 $stmt = $conn->prepare("SELECT * FROM customer WHERE customer_id = ?");
 $stmt->bind_param("i", $cust_id);
 $stmt->execute();

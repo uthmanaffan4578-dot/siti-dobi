@@ -10,11 +10,11 @@ if ($conn->connect_error) { die("Sambungan gagal: " . $conn->connect_error); }
 
 $cust_id = intval($_SESSION['customer']['customer_id']);
 
-// Baca senarai ID transaksi dari session
+// Transaction IDs from the payment that was just made
 $txn_ids = isset($_SESSION['last_transaction_ids']) ? $_SESSION['last_transaction_ids'] : [];
 
 if (empty($txn_ids)) {
-    // Jika kosong (refresh manual), ambil transaksi terkini MILIK PELANGGAN INI SAHAJA
+    // Nothing in the session: fall back to this customer's latest transaction (never another customer's)
     $stmt = $conn->prepare("SELECT MAX(transaction_id) AS max_id FROM transaction WHERE customer_id = ?");
     $stmt->bind_param("i", $cust_id);
     $stmt->execute();
@@ -32,10 +32,10 @@ if (empty($txn_ids)) {
     exit();
 }
 
-// Tukar array ID [20, 21] jadi format SQL string "20, 21"
+// IDs are cast to int, so they are safe to build into the IN (...) list
 $ids_string = implode(",", array_map('intval', $txn_ids));
 
-// Ambil data gabungan dari database
+// The customer_id filter ensures customers can only see their own transactions
 $sql = "SELECT t.*, c.name AS customer_name FROM transaction t 
         JOIN customer c ON t.customer_id = c.customer_id 
         WHERE t.transaction_id IN ($ids_string) AND t.customer_id = $cust_id
@@ -51,7 +51,7 @@ if ($result && $result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
         if (empty($customer_name)) {
             $customer_name = $row['customer_name'];
-            $first_txn_id = $row['transaction_id']; // Ambil ID pertama sebagai rujukan invois
+            $first_txn_id = $row['transaction_id']; // The first transaction ID is used as the invoice number
         }
         $items[] = $row;
         $total_all += $row['total_amount'];
@@ -73,32 +73,31 @@ if ($result && $result->num_rows > 0) {
             padding: 40px;
             background-color: #ffffff;
             color: #000000;
-            position: relative; /* Wajib ada untuk penudupan lapisan watermark */
+            position: relative; /* Positioning context for the watermark */
         }
         
-        /* ================== KOD BARU: WATERMARK LOGO BACKGROUND ================== */
+        /* Faded logo watermark behind the invoice */
         .invoice-container::before {
             content: "";
             position: absolute;
             top: 40%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 350px; /* Saiz lebar logo di tengah-tengah kertas */
-            height: 200px; /* Saiz tinggi logo */
-            background-image: url('siti dobi.png'); /* Nama fail gambar logo kau */
+            width: 350px;
+            height: 200px;
+            background-image: url('siti dobi.png');
             background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
-            opacity: 0.25; /* Tahap kepudaran (0.08 = 8% pudar, sangat selamat untuk print) */
-            z-index: -1; /* Tolak gambar ke belakang teks supaya tulisan tak tenggelam */
+            opacity: 0.25; /* Faint enough to keep the text readable when printed */
+            z-index: -1; /* Behind the text */
             pointer-events: none;
         }
-        /* ========================================================================= */
 
         .invoice-container {
             max-width: 700px;
             margin: 0 auto;
-            position: relative; /* Menghubungkan kedudukan dengan pseudo-element di atas */
+            position: relative; /* Anchors the ::before watermark */
         }
         .title {
             font-size: 42px;
@@ -182,7 +181,7 @@ if ($result && $result->num_rows > 0) {
         @media print {
             .btn-group { display: none !important; }
             body { padding: 0; }
-            /* Paksa pelayar web untuk mencetak imej background watermark */
+            /* Browsers skip background images when printing unless forced */
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
     </style>

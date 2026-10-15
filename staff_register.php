@@ -1,6 +1,6 @@
 <?php
 session_start();
-// SEKATAN KESELAMATAN: Hanya admin yang sedang log masuk boleh daftar staf baru
+// Only a logged-in admin can create staff accounts
 if (!isset($_SESSION['staff']) || $_SESSION['staff']['role'] !== 'admin') {
     header("Location: staff_login.php");
     exit();
@@ -16,14 +16,14 @@ if (isset($_POST['register'])) {
     $name = trim($_POST['name']);
     $username = trim($_POST['username']);
     $password = $_POST['password'];
-    $role = ($_POST['role'] === 'admin') ? 'admin' : 'staff'; // Hanya terima nilai yang sah
+    $role = ($_POST['role'] === 'admin') ? 'admin' : 'staff'; // Whitelist: anything other than 'admin' becomes 'staff'
 
     if (strlen($password) < 8) {
         echo "<script>alert('Kata laluan staf mesti sekurang-kurangnya 8 aksara!'); window.location='staff_register.php';</script>";
         exit();
     }
 
-    // SEMAK: Pastikan username tidak bertindan dalam database
+    // Usernames must be unique
     $check = $conn->prepare("SELECT staff_id FROM staff WHERE username = ?");
     $check->bind_param("s", $username);
     $check->execute();
@@ -32,10 +32,10 @@ if (isset($_POST['register'])) {
         exit();
     }
 
-    // KESELAMATAN: Gunakan BCRYPT hash password seperti yang ada dalam database kau
+    // Store a bcrypt hash, never the plain-text password
     $password_hash = password_hash($password, PASSWORD_BCRYPT);
 
-    // Langkah INSERT data staf baru (Default is_active = 1)
+    // New staff accounts start active (is_active = 1)
     $stmt = $conn->prepare("INSERT INTO staff (name, role, username, password_hash, created_at, is_active)
                             VALUES (?, ?, ?, ?, NOW(), 1)");
     $stmt->bind_param("ssss", $name, $role, $username, $password_hash);
