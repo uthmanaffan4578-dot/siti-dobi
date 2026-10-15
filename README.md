@@ -95,3 +95,21 @@ siti_dobi_db.sql         Database schema, triggers and sample data
 - CSRF tokens on state-changing actions
 - Password change and reset
 - Customer transaction history and monthly sales reports
+
+## Team
+
+Built as a group project for the Database course at Universiti Tun Hussein Onn Malaysia (UTHM).
+
+- Uthman 'Affan
+- Rifqi Adam
+- Haikal Rifqi
+- Fikri Azman
+- Arash Adnin
+
+After the course, I audited the code and fixed several security issues: SQL injection, a hard-coded backdoor password, open admin registration and plain-text passwords (see Security above).
+
+## Author
+
+**Uthman 'Affan**, Bachelor of Computer Science (Multimedia Computing), UTHM
+
+[LinkedIn](https://www.linkedin.com/in/uthman-affan)
