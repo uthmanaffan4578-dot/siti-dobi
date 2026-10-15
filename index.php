@@ -40,9 +40,17 @@ if (isset($_GET['toggle_staff_id']) && $current_user_role === 'admin') {
 }
 
 // 2. QUERY LIVE UNTUK KAD STATISTIK
-$query_sales = $conn->query("SELECT SUM(total_amount) AS total_sales FROM transaction WHERE status = 'completed'");
+// Pendapatan BULAN INI sahaja. Tarikh diambil dari MySQL (bukan PHP) supaya zon masa sama dengan transaction_date.
+$query_sales = $conn->query("SELECT SUM(total_amount) AS total_sales, MONTH(CURDATE()) AS bulan, YEAR(CURDATE()) AS tahun
+                             FROM transaction
+                             WHERE status = 'completed'
+                             AND transaction_date >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+                             AND transaction_date < DATE_FORMAT(CURDATE(), '%Y-%m-01') + INTERVAL 1 MONTH");
 $row_sales = $query_sales->fetch_assoc();
 $live_sales = $row_sales['total_sales'] ?? 0.00;
+
+$nama_bulan = ['', 'Januari', 'Februari', 'Mac', 'April', 'Mei', 'Jun', 'Julai', 'Ogos', 'September', 'Oktober', 'November', 'Disember'];
+$bulan_semasa = $nama_bulan[$row_sales['bulan']] . ' ' . $row_sales['tahun'];
 
 $query_orders = $conn->query("SELECT COUNT(*) AS total_orders FROM transaction WHERE status = 'completed'");
 $row_orders = $query_orders->fetch_assoc();
@@ -149,7 +157,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
             
             <header class="main-header">
                 <h1>Welcome To Siti Dobi</h1>
-                <div class="date-badge">Mei 2026</div>
+                <div class="date-badge"><?php echo $bulan_semasa; ?></div>
             </header>
 
             <section class="stats-grid">
@@ -258,7 +266,9 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
                                     echo "<td><strong style='color: " . ($s_row['role'] === 'admin' ? '#ea580c' : '#0284c7') . ";'>" . strtoupper($s_row['role']) . "</strong></td>";
                                     echo "<td>" . ($s_row['is_active'] == 1 ? '✅ Aktif' : '❌ Digantung') . "</td>";
                                     echo "<td style='text-align: center;'>";
-                                    if ($s_row['is_active'] == 1) {
+                                    if ($s_row['staff_id'] == $_SESSION['staff']['staff_id']) {
+                                        echo "<span style='color:#94a3b8; font-size:0.85rem;'>(Anda)</span>"; // Tak boleh gantung akaun sendiri
+                                    } elseif ($s_row['is_active'] == 1) {
                                         echo "<a href='index.php?page=staff&toggle_staff_id=" . $s_row['staff_id'] . "' class='btn-delete' onclick=\"return confirm('Adakah anda pasti mahu menggantung staf " . htmlspecialchars($s_row['name'], ENT_QUOTES) . "?');\">🚫 Gantung</a>";
                                     } else {
                                         echo "<a href='index.php?page=staff&toggle_staff_id=" . $s_row['staff_id'] . "' class='btn-add' style='margin-bottom:0; padding:6px 12px; font-size:0.85rem;'>✅ Aktifkan</a>";
