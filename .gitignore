@@ -1,0 +1,8 @@
+# OS / editor files
+Thumbs.db
+Desktop.ini
+.DS_Store
+.vscode/
+
+# Local DB backups (keep siti_dobi_db.sql tracked)
+*.sql.bak
