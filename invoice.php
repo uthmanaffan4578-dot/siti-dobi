@@ -85,7 +85,7 @@ if ($result && $result->num_rows > 0) {
             transform: translate(-50%, -50%);
             width: 350px;
             height: 200px;
-            background-image: url('siti dobi.png');
+            background-image: url('logo.png');
             background-size: contain;
             background-position: center;
             background-repeat: no-repeat;

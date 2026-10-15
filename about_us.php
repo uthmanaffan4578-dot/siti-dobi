@@ -26,7 +26,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: linear-gradient(rgba(15, 23, 42, 0.65), rgba(15, 23, 42, 0.65)), url('unnamed (1).webp');
+            background-image: linear-gradient(rgba(15, 23, 42, 0.65), rgba(15, 23, 42, 0.65)), url('bg-about.webp');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
